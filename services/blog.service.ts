@@ -2,7 +2,6 @@ import Blog, { IBlogDocument } from "@/models/Blog";
 import User from "@/models/User";
 import { connectDB } from "@/lib/db/mongoose";
 import { slugify, escapeRegex, getPagination } from "@/lib/utils";
-import { sanitizeHtml } from "@/lib/sanitize";
 import type { BlogFilters, PaginatedBlogs, BlogListItem } from "@/types/blog.types";
 import type { CreateBlogInput, UpdateBlogInput } from "@/lib/validations/blog.schema";
 import { tiptapJsonToHtml } from "@/lib/tiptap-server";
@@ -138,7 +137,13 @@ export async function createBlogDraft(
   const contentHtml = tiptapJsonToHtml(data.content as Record<string, unknown>);
 
   const blog = await Blog.create({
-    ...data,
+    title: data.title,
+    excerpt: data.excerpt,
+    content: data.content,
+    thumbnail: data.thumbnail ?? "",
+    category: data.category,
+    tags: data.tags ?? [],
+    seo: data.seo ?? {},
     slug,
     contentHtml,
     author: authorId,
@@ -171,10 +176,12 @@ export async function updateUserBlog(
 ): Promise<IBlogDocument | null> {
   await connectDB();
 
-  const updateData: Record<string, unknown> = { ...data };
+  const { content, ...fields } = data;
+  const updateData: Record<string, unknown> = { ...fields };
 
-  if (data.content) {
-    updateData.contentHtml = tiptapJsonToHtml(data.content as Record<string, unknown>);
+  if (content) {
+    updateData.content = content;
+    updateData.contentHtml = tiptapJsonToHtml(content as Record<string, unknown>);
   }
 
   return Blog.findOneAndUpdate(

@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { getCloudinaryUrl } from "@/lib/utils";
 import { api, isOk } from "@/lib/api";
+import { SafeHtml } from "@/components/SafeHtml";
 
 const TiptapEditor = dynamic(
   () => import("@/components/editor/TiptapEditor").then((m) => m.TiptapEditor),
@@ -272,9 +273,9 @@ export default function AdminBlogReviewPage() {
             </div>
 
             <div className="bg-white rounded-3xl p-10 shadow-2xl">
-              <div
+              <SafeHtml
+                html={String(blog.contentHtml ?? "")}
                 className="prose prose-indigo prose-lg max-w-none prose-img:rounded-2xl"
-                dangerouslySetInnerHTML={{ __html: String(blog.contentHtml ?? "") }}
               />
             </div>
 

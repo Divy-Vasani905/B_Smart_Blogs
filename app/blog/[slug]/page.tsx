@@ -7,6 +7,7 @@ import { Clock, Eye, ArrowLeft, Calendar, User } from "lucide-react";
 import { SITE_URL, SITE_NAME, SITE_KEYWORDS } from "@/lib/site-config";
 import { getBlogBySlug, getRelatedBlogs, getAllPublishedSlugs } from "@/services/blog.service";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { SafeHtml } from "@/components/SafeHtml";
 
 export const revalidate = 3600; // ISR: re-generate every 1 hour
 
@@ -154,9 +155,9 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             )}
 
-            <div
+            <SafeHtml
+              html={blog.contentHtml ?? ""}
               className="prose prose-neutral prose-slate dark:prose-invert max-w-none text-black prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-black prose-p:text-black prose-strong:text-black prose-a:text-primary prose-img:rounded-xl prose-pre:bg-muted prose-code:text-primary prose-code:before:content-none prose-code:after:content-none"
-              dangerouslySetInnerHTML={{ __html: blog.contentHtml ?? "" }}
             />
 
             {/* Tags */}

@@ -175,9 +175,12 @@ export async function adminUpdateBlog(
 ): Promise<IBlogDocument | null> {
   await connectDB();
 
-  const updateData: any = { ...data };
-  if (data.content) {
-    updateData.contentHtml = tiptapJsonToHtml(data.content as Record<string, unknown>);
+  const { content, ...fields } = data;
+  const updateData: Record<string, unknown> = { ...fields };
+
+  if (content) {
+    updateData.content = content;
+    updateData.contentHtml = tiptapJsonToHtml(content as Record<string, unknown>);
   }
 
   return Blog.findByIdAndUpdate(blogId, updateData, { new: true }).lean() as unknown as Promise<IBlogDocument | null>;

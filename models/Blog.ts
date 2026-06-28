@@ -1,5 +1,21 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 import type { BlogStatus } from "@/types/blog.types";
+import { sanitizeHtml } from "@/lib/sanitize";
+
+function sanitizeUpdateContentHtml(update: Record<string, unknown> | null | undefined) {
+  if (!update || typeof update !== "object") return;
+
+  if (typeof update.contentHtml === "string") {
+    update.contentHtml = sanitizeHtml(update.contentHtml);
+  }
+
+  const set = update.$set;
+  if (set && typeof set === "object" && typeof (set as Record<string, unknown>).contentHtml === "string") {
+    (set as Record<string, unknown>).contentHtml = sanitizeHtml(
+      (set as Record<string, unknown>).contentHtml as string
+    );
+  }
+}
 
 interface ReviewMessageDoc {
   message: string;
@@ -144,12 +160,21 @@ BlogSchema.index(
   { weights: { title: 10, tags: 5, excerpt: 1 } }
 ); // Full-text search
 
-// Auto-calculate reading time before save
+// Sanitize HTML and auto-calculate reading time before save
 BlogSchema.pre("save", function (next) {
-  if (this.isModified("contentHtml")) {
-    const words = this.contentHtml.replace(/<[^>]+>/g, "").split(/\s+/).length;
-    this.readingTime = Math.ceil(words / 200); // 200 wpm average
+  if (this.contentHtml) {
+    this.contentHtml = sanitizeHtml(this.contentHtml);
   }
+  if (this.isModified("contentHtml")) {
+    const words = this.contentHtml.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
+    this.readingTime = Math.max(1, Math.ceil(words / 200)); // 200 wpm average
+  }
+  next();
+});
+
+// findOneAndUpdate bypasses "save" — sanitize contentHtml on direct updates too
+BlogSchema.pre("findOneAndUpdate", function (next) {
+  sanitizeUpdateContentHtml(this.getUpdate() as Record<string, unknown>);
   next();
 });
 

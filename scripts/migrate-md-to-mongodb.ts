@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import * as dotenv from "dotenv";
+import { sanitizeHtml } from "../lib/sanitize";
 
 dotenv.config({ path: ".env.local" });
 
@@ -135,7 +136,7 @@ async function migrate() {
       const { data, content } = matter(raw);
       const title = (data.title as string)?.trim() || slugToTitle(slug);
       const tiptapJson = markdownToTiptapJson(content);
-      const contentHtml = markdownToHtml(content);
+      const contentHtml = sanitizeHtml(markdownToHtml(content));
 
       const words = contentHtml.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
       const readingTime = Math.max(1, Math.ceil(words / 200));

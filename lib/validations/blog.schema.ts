@@ -24,7 +24,6 @@ export const createBlogSchema = z.object({
     (val) => val && typeof val === "object" && "type" in val,
     "Content must be valid Tiptap JSON"
   ),
-  contentHtml: z.string().optional(),
   thumbnail: z.string().url("Invalid thumbnail URL").optional().or(z.literal("")),
   category: z.string().min(1, "Category is required").trim(),
   tags: z.array(z.string().trim().toLowerCase()).max(10, "Maximum 10 tags").default([]),
