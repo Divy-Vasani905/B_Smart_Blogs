@@ -29,6 +29,8 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address").toLowerCase().trim(),
   password: z.string().min(1, "Password is required"),
+  /** When "admin", only admin accounts may proceed (used by admin login page). */
+  intent: z.enum(["admin"]).optional(),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

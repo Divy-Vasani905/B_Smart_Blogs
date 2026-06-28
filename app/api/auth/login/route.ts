@@ -31,8 +31,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
     }
 
-    const isValid = await comparePassword(password, user.password);
+    const isValid = await comparePassword(password, user.password ?? "");
     if (!isValid) {
+      return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
+    }
+
+    if (parsed.data.intent === "admin" && user.role !== "admin") {
       return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
     }
 
