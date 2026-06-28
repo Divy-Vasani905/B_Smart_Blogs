@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
 import { verifyAccessToken } from "@/lib/auth/jwt";
 import { COOKIE_NAMES } from "@/lib/auth/cookies";
-import { isOk } from "@/lib/api";
 import type { AuthUser } from "@/types/user.types";
 
 /**
@@ -16,14 +14,14 @@ export async function tryRefreshAccessToken(
   if (!refreshToken) return null;
 
   const refreshUrl = new URL("/api/auth/refresh", req.url);
-  const refreshRes = await axios.post(refreshUrl.toString(), null, {
+  const refreshRes = await fetch(refreshUrl.toString(), {
+    method: "POST",
     headers: { Cookie: req.headers.get("cookie") ?? "" },
-    validateStatus: () => true,
   });
 
-  if (!isOk(refreshRes.status)) return null;
+  if (refreshRes.status < 200 || refreshRes.status >= 300) return null;
 
-  const setCookies = refreshRes.headers["set-cookie"] ?? [];
+  const setCookies = refreshRes.headers.getSetCookie();
 
   let newAccessToken: string | undefined;
   for (const cookie of setCookies) {
