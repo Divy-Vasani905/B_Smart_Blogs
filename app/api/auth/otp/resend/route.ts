@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resendOtpCode } from "@/services/otp.service";
+import { rateLimitOtpResend } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { handleApiError } from "@/lib/utils";
 
@@ -21,6 +22,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, type } = parsed.data;
+
+    const limited = await rateLimitOtpResend(req, email);
+    if (limited) return limited;
 
     const result = await resendOtpCode(email, type);
 

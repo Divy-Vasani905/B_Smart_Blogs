@@ -5,7 +5,10 @@ import {
   type IRateLimiterStoreOptions,
 } from "rate-limiter-flexible";
 import { NextRequest, NextResponse } from "next/server";
-import { getRedisClient } from "@/lib/redis/client";
+import { assertRedisConfiguredInProduction, getRedisClient } from "@/lib/redis/client";
+import { getClientIp } from "@/lib/request-ip";
+
+assertRedisConfiguredInProduction();
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -18,7 +21,10 @@ type LimiterKind =
   | "general"
   | "google"
   | "otp_verify"
-  | "otp_verify_ip";
+  | "otp_verify_ip"
+  | "otp_resend"
+  | "otp_resend_ip"
+  | "blog_view";
 
 type LimiterConfig = {
   keyPrefix: string;
@@ -74,6 +80,27 @@ const LIMITER_CONFIGS: Record<LimiterKind, LimiterConfig> = {
     duration: 15 * 60,
     blockDuration: isDev ? 1 : 15 * 60,
   },
+  /** OTP resend: 3 requests per email per 15 minutes */
+  otp_resend: {
+    keyPrefix: "otp_resend",
+    points: isDev ? 100 : 3,
+    duration: 15 * 60,
+    blockDuration: isDev ? 1 : 15 * 60,
+  },
+  /** OTP resend: 10 requests per IP per 15 minutes */
+  otp_resend_ip: {
+    keyPrefix: "otp_resend_ip",
+    points: isDev ? 100 : 10,
+    duration: 15 * 60,
+    blockDuration: isDev ? 1 : 15 * 60,
+  },
+  /** Blog view: 1 counted view per IP + slug per 3 hours */
+  blog_view: {
+    keyPrefix: "blog_view",
+    points: 1,
+    duration: 3 * 60 * 60,
+    blockDuration: 3 * 60 * 60,
+  },
 };
 
 // ── Limiter factory ───────────────────────────────────────────────────────────
@@ -117,14 +144,6 @@ function getLimiter(type: LimiterKind): RateLimiter {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
 async function applyLimit(
   limiter: RateLimiter,
   key: string
@@ -161,7 +180,7 @@ export async function rateLimit(
   type: LimiterKind,
   key?: string
 ): Promise<NextResponse | null> {
-  const limitKey = key ?? getIp(req);
+  const limitKey = key ?? getClientIp(req);
   return applyLimit(getLimiter(type), limitKey);
 }
 
@@ -174,4 +193,24 @@ export async function rateLimitOtpVerify(
   if (ipLimited) return ipLimited;
 
   return rateLimit(req, "otp_verify", `email:${email.toLowerCase().trim()}`);
+}
+
+/** Rate-limit OTP resend by IP and by email. */
+export async function rateLimitOtpResend(
+  req: NextRequest,
+  email: string
+): Promise<NextResponse | null> {
+  const ipLimited = await rateLimit(req, "otp_resend_ip");
+  if (ipLimited) return ipLimited;
+
+  return rateLimit(req, "otp_resend", `email:${email.toLowerCase().trim()}`);
+}
+
+/** Rate-limit blog view increments: 1 per IP + slug per 3 hours. */
+export async function rateLimitBlogView(
+  req: NextRequest,
+  slug: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(req);
+  return rateLimit(req, "blog_view", `${slug.toLowerCase().trim()}:${ip}`);
 }

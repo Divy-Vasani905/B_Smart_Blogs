@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadImage } from "@/lib/cloudinary";
 import { rateLimit } from "@/lib/rate-limit";
+import { validateImageMagicBytes } from "@/lib/validate-image";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { getUserFromHeaders, handleApiError } from "@/lib/utils";
 
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const magic = validateImageMagicBytes(buffer, file.type);
+    if (!magic.valid) {
+      return NextResponse.json(
+        apiError("File content does not match its declared image type."),
+        { status: 400 }
+      );
+    }
+
     const result = await uploadImage(buffer, "bsmart/thumbnails");
 
     return NextResponse.json(

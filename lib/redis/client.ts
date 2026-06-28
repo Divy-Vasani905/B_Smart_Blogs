@@ -40,3 +40,17 @@ export function isRedisConfigured(): boolean {
     process.env.REDIS_URL?.trim() || process.env.UPSTASH_REDIS_URL?.trim()
   );
 }
+
+/**
+ * Call at startup in production to surface missing Redis configuration early.
+ */
+export function assertRedisConfiguredInProduction(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  if (isRedisConfigured()) return;
+
+  console.error(
+    "[redis] REDIS_URL is not set in production. " +
+      "Rate limits will not be shared across server instances. " +
+      "See .env.example for setup."
+  );
+}

@@ -8,6 +8,7 @@ import { SITE_URL, SITE_NAME, SITE_KEYWORDS } from "@/lib/site-config";
 import { getBlogBySlug, getRelatedBlogs, getAllPublishedSlugs } from "@/services/blog.service";
 import { getCloudinaryUrl } from "@/lib/utils";
 import { SafeHtml } from "@/components/SafeHtml";
+import { BlogViewTracker } from "@/components/BlogViewTracker";
 
 export const revalidate = 3600; // ISR: re-generate every 1 hour
 
@@ -95,6 +96,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
+      <BlogViewTracker slug={blog.slug} />
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbLd} />
       <div className="w-full">
