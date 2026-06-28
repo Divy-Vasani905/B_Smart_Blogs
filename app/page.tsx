@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { BlogPost } from "@/lib/blog-data";
+import type { BlogPost } from "@/lib/blog-types";
 import { BlogCard } from "@/components/BlogCard";
 import { JsonLd } from "@/components/JsonLd";
 import { SITE_URL, SITE_NAME, SITE_KEYWORDS } from "@/lib/site-config";

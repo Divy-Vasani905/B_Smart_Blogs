@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { BlogPost } from "@/lib/blog-data";
+import type { BlogPost } from "@/lib/blog-types";
 import { Clock, Eye, User, Calendar } from "lucide-react";
 import { getCloudinaryUrl } from "@/lib/utils";
 
