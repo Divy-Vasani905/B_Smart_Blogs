@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { UserRole } from "@/types/user.types";
 import { verifySignupOtp, verifyLoginOtp } from "@/services/otp.service";
-import { signAccessToken, signRefreshToken, signAdminSessionToken } from "@/lib/auth/jwt";
-import { setUserAuthCookies, setAdminSessionCookie } from "@/lib/auth/cookies";
+import { signAdminSessionToken } from "@/lib/auth/jwt";
+import { setAdminSessionCookie } from "@/lib/auth/cookies";
+import { issueUserSession } from "@/lib/auth/issue-session";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { handleApiError } from "@/lib/utils";
 
@@ -66,9 +67,16 @@ export async function POST(req: NextRequest) {
       const adminToken = await signAdminSessionToken(tokenPayload);
       setAdminSessionCookie(res, adminToken);
     } else {
-      const accessToken = await signAccessToken(tokenPayload);
-      const refreshToken = await signRefreshToken({ userId: user._id });
-      setUserAuthCookies(res, accessToken, refreshToken);
+      await issueUserSession(
+        res,
+        {
+          userId: user._id,
+          email: user.email,
+          role: user.role as UserRole,
+          name: user.name,
+        },
+        req
+      );
     }
 
     return res;

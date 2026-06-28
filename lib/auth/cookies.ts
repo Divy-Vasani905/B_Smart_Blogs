@@ -1,5 +1,10 @@
 import { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { NextResponse } from "next/server";
+import {
+  ACCESS_MAX_AGE_SECONDS,
+  REFRESH_MAX_AGE_SECONDS,
+  ADMIN_MAX_AGE_SECONDS,
+} from "@/lib/auth/jwt";
 
 const ACCESS_COOKIE = process.env.COOKIE_ACCESS_NAME || "__bsf_acc";
 const REFRESH_COOKIE = process.env.COOKIE_REFRESH_NAME || "__bsf_ref";
@@ -21,16 +26,21 @@ export function setUserAuthCookies(
   accessToken: string,
   refreshToken: string
 ): void {
-  // Access token: 30 days
   res.cookies.set(ACCESS_COOKIE, accessToken, {
     ...baseCookieOptions,
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    maxAge: ACCESS_MAX_AGE_SECONDS,
   });
 
-  // Refresh token: 30 days
   res.cookies.set(REFRESH_COOKIE, refreshToken, {
     ...baseCookieOptions,
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    maxAge: REFRESH_MAX_AGE_SECONDS,
+  });
+}
+
+export function setAccessCookie(res: NextResponse, accessToken: string): void {
+  res.cookies.set(ACCESS_COOKIE, accessToken, {
+    ...baseCookieOptions,
+    maxAge: ACCESS_MAX_AGE_SECONDS,
   });
 }
 
@@ -48,7 +58,7 @@ export function clearUserAuthCookies(res: NextResponse): void {
 export function setAdminSessionCookie(res: NextResponse, adminToken: string): void {
   res.cookies.set(ADMIN_COOKIE, adminToken, {
     ...baseCookieOptions,
-    // NO maxAge here — this is a session cookie, expires when browser closes
+    maxAge: ADMIN_MAX_AGE_SECONDS,
   });
 }
 

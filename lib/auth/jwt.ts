@@ -1,10 +1,16 @@
 import { SignJWT, jwtVerify } from "jose";
 import type { AuthUser } from "@/types/user.types";
+import { parseDurationToSeconds } from "@/lib/auth/duration";
 
 const ACCESS_SECRET = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
 const REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET!);
 const ACCESS_EXPIRES = process.env.JWT_ACCESS_EXPIRES_IN || "15m";
 const REFRESH_EXPIRES = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+
+/** Cookie maxAge values aligned with JWT expiries */
+export const ACCESS_MAX_AGE_SECONDS = parseDurationToSeconds(ACCESS_EXPIRES);
+export const REFRESH_MAX_AGE_SECONDS = parseDurationToSeconds(REFRESH_EXPIRES);
+export const ADMIN_MAX_AGE_SECONDS = 8 * 60 * 60;
 
 if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
   throw new Error("JWT secrets are not defined in environment variables");

@@ -13,8 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { findOrCreateGoogleUser, verifyGoogleToken } from "@/services/google.service";
-import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
-import { setUserAuthCookies } from "@/lib/auth/cookies";
+import { issueUserSession } from "@/lib/auth/issue-session";
 import { rateLimit } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { handleApiError } from "@/lib/utils";
@@ -78,11 +77,6 @@ export async function POST(req: NextRequest) {
       name: user.name,
     };
 
-    const jwtAccessToken = await signAccessToken(tokenPayload);
-    const refreshToken = await signRefreshToken({
-      userId: (user._id as object).toString(),
-    });
-
     const res = NextResponse.json(
       apiSuccess(
         {
@@ -99,7 +93,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
-    setUserAuthCookies(res, jwtAccessToken, refreshToken);
+    await issueUserSession(res, tokenPayload, req);
 
     return res;
   } catch (err) {

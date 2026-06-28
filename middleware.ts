@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken, verifyAdminSessionToken } from "@/lib/auth/jwt";
+import { tryRefreshAccessToken } from "@/lib/auth/middleware-refresh";
 
 const ACCESS_COOKIE = process.env.COOKIE_ACCESS_NAME || "__bsf_acc";
 const ADMIN_COOKIE = process.env.COOKIE_ADMIN_SESSION || "__bsf_adm";
@@ -37,6 +38,7 @@ export async function middleware(req: NextRequest) {
       requestHeaders.set("x-user-id", payload.userId);
       requestHeaders.set("x-user-role", payload.role);
       requestHeaders.set("x-user-email", payload.email);
+      requestHeaders.set("x-user-name", payload.name);
       return NextResponse.next({ request: { headers: requestHeaders } });
     } catch {
       // Token invalid/expired — redirect to admin login
@@ -71,6 +73,7 @@ export async function middleware(req: NextRequest) {
       requestHeaders.set("x-user-id", payload.userId);
       requestHeaders.set("x-user-role", payload.role);
       requestHeaders.set("x-user-email", payload.email);
+      requestHeaders.set("x-user-name", payload.name);
       return NextResponse.next({ request: { headers: requestHeaders } });
     } catch {
       return NextResponse.json(
@@ -112,8 +115,12 @@ export async function middleware(req: NextRequest) {
       requestHeaders.set("x-user-id", payload.userId);
       requestHeaders.set("x-user-role", payload.role);
       requestHeaders.set("x-user-email", payload.email);
+      requestHeaders.set("x-user-name", payload.name);
       return NextResponse.next({ request: { headers: requestHeaders } });
     } catch {
+      const refreshed = await tryRefreshAccessToken(req);
+      if (refreshed) return refreshed;
+
       if (USER_DASHBOARD_ROUTES.test(pathname)) {
         return NextResponse.redirect(new URL("/", req.url));
       }
