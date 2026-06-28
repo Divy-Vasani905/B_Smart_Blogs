@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 const TiptapEditor = dynamic(
   () => import("@/components/editor/TiptapEditor").then((m) => m.TiptapEditor),
@@ -42,9 +43,8 @@ const params = useParams<{ id?: string }>();
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/user/blogs/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
+    api.get(`/api/user/blogs/${id}`)
+      .then(({ data }) => {
         if (data.success) {
           const b = data.data;
           setBlog(b);
@@ -73,8 +73,7 @@ const params = useParams<{ id?: string }>();
     try {
       const fd = new FormData();
       fd.append("thumbnail", file);
-      const res = await fetch("/api/upload/thumbnail", { method: "POST", body: fd });
-      const data = await res.json();
+      const { data } = await api.post("/api/upload/thumbnail", fd);
       if (data.success) setThumbnail(data.data.url);
       else setError(data.error || "Thumbnail upload failed");
     } finally { setThumbnailUploading(false); }
@@ -93,8 +92,7 @@ const params = useParams<{ id?: string }>();
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         seo: { metaTitle: seoTitle, metaDescription: seoDesc, focusKeyword: focusKw },
       };
-      const res = await fetch(`/api/user/blogs/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
+      const { data } = await api.put(`/api/user/blogs/${id}`, body);
       if (!data.success) setError(data.error || "Save failed");
       else alert("Draft saved successfully!");
     } finally { setSaving(false); }
@@ -104,8 +102,7 @@ const params = useParams<{ id?: string }>();
     await saveDraft();
     setSubmitting(true); setError("");
     try {
-      const res = await fetch(`/api/user/blogs/${id}/submit`, { method: "POST" });
-      const data = await res.json();
+      const { data } = await api.post(`/api/user/blogs/${id}/submit`);
       if (data.success) router.push("/dashboard/blogs");
       else setError(data.error || "Submit failed");
     } finally { setSubmitting(false); }

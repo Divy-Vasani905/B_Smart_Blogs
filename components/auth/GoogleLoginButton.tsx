@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
 import { isGoogleOAuthConfigured } from "@/lib/google-oauth.config";
 
 interface GoogleLoginButtonProps {
@@ -104,13 +105,9 @@ function GoogleLoginButtonInner({ onSuccess }: GoogleLoginButtonProps) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential }),
+      const { data } = await api.post("/api/auth/google", {
+        credential: response.credential,
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         toast.error(data.error || "Google sign-in failed. Please try again.");

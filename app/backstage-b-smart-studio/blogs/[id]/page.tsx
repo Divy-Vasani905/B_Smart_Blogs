@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { api, isOk } from "@/lib/api";
 
 const TiptapEditor = dynamic(
   () => import("@/components/editor/TiptapEditor").then((m) => m.TiptapEditor),
@@ -40,9 +41,8 @@ export default function AdminBlogReviewPage() {
 
   const fetchBlog = useCallback(() => {
     setLoading(true);
-    fetch(`/api/admin/blogs/${id}`)
-      .then((r) => r.json())
-      .then((d) => {
+    api.get(`/api/admin/blogs/${id}`)
+      .then(({ data: d }) => {
         if (d.success) {
           setBlog(d.data);
           setEditForm({
@@ -66,9 +66,9 @@ export default function AdminBlogReviewPage() {
     setActionLoading(action);
     try {
       const url = `/api/admin/blogs/${id}/${action}`;
-      const body = action === "approve" ? undefined : JSON.stringify({ message });
-      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-      if (res.ok) {
+      const body = action === "approve" ? undefined : { message };
+      const { status } = await api.post(url, body);
+      if (isOk(status)) {
         toast.success(`Blog ${action.replace("-", " ")}d successfully`);
         router.push("/backstage-b-smart-studio/pending");
       } else { toast.error("Action failed."); }
@@ -78,12 +78,7 @@ export default function AdminBlogReviewPage() {
   async function handleAdminUpdate() {
     setActionLoading("updating");
     try {
-      const res = await fetch(`/api/admin/blogs/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      });
-      const data = await res.json();
+      const { data } = await api.put(`/api/admin/blogs/${id}`, editForm);
       if (data.success) {
         toast.success("Blog updated by admin");
         setIsEditMode(false);

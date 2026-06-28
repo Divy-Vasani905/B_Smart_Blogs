@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Loader2, Camera } from "lucide-react";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -21,9 +22,8 @@ export default function EditProfilePage() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
+    api.get("/api/auth/me")
+      .then(({ data: d }) => {
         if (d.success) {
           setUser(d.data);
           setForm({
@@ -46,8 +46,7 @@ export default function EditProfilePage() {
     try {
       const fd = new FormData();
       fd.append("thumbnail", file); // Reusing thumbnail upload API
-      const res = await fetch("/api/upload/thumbnail", { method: "POST", body: fd });
-      const data = await res.json();
+      const { data } = await api.post("/api/upload/thumbnail", fd);
       if (data.success) {
         setForm({ ...form, avatar: data.data.url });
         toast.success("Avatar uploaded!");
@@ -65,12 +64,7 @@ export default function EditProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
+      const { data } = await api.patch("/api/user/profile", form);
       if (data.success) {
         toast.success("Profile updated successfully!");
         router.push("/dashboard/profile");

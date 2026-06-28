@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<Record<string, unknown>[]>([]);
@@ -13,8 +14,7 @@ export default function AdminUsersPage() {
   async function fetchUsers() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/users?page=${page}&limit=20`);
-      const data = await res.json();
+      const { data } = await api.get(`/api/admin/users?page=${page}&limit=20`);
       if (data.success) { setUsers(data.data.users); setTotal(data.data.total); setTotalPages(data.data.totalPages); }
     } finally { setLoading(false); }
   }
@@ -22,7 +22,7 @@ export default function AdminUsersPage() {
   useEffect(() => { fetchUsers(); }, [page]);
 
   async function toggleStatus(id: string) {
-    await fetch(`/api/admin/users/${id}`, { method: "PATCH" });
+    await api.patch(`/api/admin/users/${id}`);
     fetchUsers();
   }
 

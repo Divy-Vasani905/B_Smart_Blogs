@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { api, isOk } from "@/lib/api";
 
 type BlogStatus = "draft" | "pending" | "published" | "changes_requested" | "rejected";
 const STATUS_COLORS: Record<BlogStatus, string> = {
@@ -25,8 +26,7 @@ export default function AdminBlogsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "12", ...(status ? { status } : {}), ...(search ? { search } : {}) });
-      const res = await fetch(`/api/admin/blogs?${params}`);
-      const data = await res.json();
+      const { data } = await api.get(`/api/admin/blogs?${params}`);
       if (data.success) { setBlogs(data.data.blogs); setTotal(data.data.total); setTotalPages(data.data.totalPages); }
     } finally { setLoading(false); }
   }
@@ -35,8 +35,8 @@ export default function AdminBlogsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this blog permanently?")) return;
-    const res = await fetch(`/api/admin/blogs/${id}`, { method: "DELETE" });
-    if (res.ok) fetchBlogs();
+    const { status } = await api.delete(`/api/admin/blogs/${id}`);
+    if (isOk(status)) fetchBlogs();
   }
 
   return (

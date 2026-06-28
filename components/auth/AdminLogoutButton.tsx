@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 export function AdminLogoutButton() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export function AdminLogoutButton() {
       type="button"
       onClick={async (e) => {
         e.preventDefault();
-        await fetch("/api/auth/logout", { method: "POST" });
+        await api.post("/api/auth/logout");
         router.push("/backstage-b-smart-studio/login");
         router.refresh();
       }}

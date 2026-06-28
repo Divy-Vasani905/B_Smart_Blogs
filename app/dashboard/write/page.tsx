@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 const TiptapEditor = dynamic(
   () => import("@/components/editor/TiptapEditor").then((m) => m.TiptapEditor),
@@ -43,14 +44,7 @@ export default function WriteBlogPage() {
     try {
       const fd = new FormData();
       fd.append("thumbnail", file);
-      const res = await fetch("/api/upload/thumbnail", { method: "POST", body: fd });
-      
-      let data;
-      try {
-        data = await res.json();
-      } catch (parseErr) {
-        throw new Error(`Server returned an invalid response (${res.status}).`);
-      }
+      const { data } = await api.post("/api/upload/thumbnail", fd);
 
       if (data.success) {
         setThumbnail(data.data.url);
@@ -79,9 +73,9 @@ export default function WriteBlogPage() {
         seo: { metaTitle: seoTitle, metaDescription: seoDesc, focusKeyword: focusKw },
       };
       const url = savedId ? `/api/user/blogs/${savedId}` : "/api/user/blogs";
-      const method = savedId ? "PUT" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
+      const { data } = savedId
+        ? await api.put(url, body)
+        : await api.post(url, body);
       if (data.success) { setSavedId(data.data._id); }
       else setError(data.error || "Save failed");
     } finally { setSaving(false); }
@@ -92,8 +86,7 @@ export default function WriteBlogPage() {
     if (!savedId) return;
     setSubmitting(true); setError("");
     try {
-      const res = await fetch(`/api/user/blogs/${savedId}/submit`, { method: "POST" });
-      const data = await res.json();
+      const { data } = await api.post(`/api/user/blogs/${savedId}/submit`);
       if (data.success) router.push("/dashboard/blogs");
       else setError(data.error || "Submit failed");
     } finally { setSubmitting(false); }

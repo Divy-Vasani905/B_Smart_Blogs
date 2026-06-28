@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AuthModal } from "./AuthModal";
+import { api } from "@/lib/api";
 
 export function AuthModalTrigger() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,8 +12,8 @@ export function AuthModalTrigger() {
     // Check if user is logged in
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/me");
-        if (res.status === 401) {
+        const { status } = await api.get("/api/auth/me");
+        if (status === 401) {
           // Not logged in, start timer
           setShouldShow(true);
         }
@@ -29,9 +30,28 @@ export function AuthModalTrigger() {
     if (!shouldShow) return;
 
     // Show modal after 1 minute (60,000ms)
-    const timer = setTimeout(() => {
-      // Final check: don't show if they logged in during that minute
-      setIsOpen(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { status } = await api.get("/api/auth/me");
+        const isNotLoggedIn = status === 401;
+
+        if (isNotLoggedIn) {
+          setIsOpen((prevIsOpen) => {
+            if (!prevIsOpen) {
+              return true;
+            }
+            return prevIsOpen;
+          });
+        }
+      } catch (err) {
+        // Assume not logged in on error
+        setIsOpen((prevIsOpen) => {
+          if (!prevIsOpen) {
+            return true;
+          }
+          return prevIsOpen;
+        });
+      }
     }, 60000);
 
     return () => clearTimeout(timer);

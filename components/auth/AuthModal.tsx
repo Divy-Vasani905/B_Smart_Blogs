@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { RefreshCw, Lock } from "lucide-react";
 import { UserRole } from "@/types/user.types";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { api } from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -70,12 +71,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     setLoading(true);
     try {
       const payload = loginForm;
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const { data } = await api.post("/api/auth/login", payload);
       if (!data.success) {
         toast.error(data.error || "Login failed");
         return;
@@ -99,12 +95,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...signupForm }),
-      });
-      const data = await res.json();
+      const { data } = await api.post("/api/auth/signup", { ...signupForm });
       if (!data.success) {
         toast.error(data.error || "Signup failed");
         return;
@@ -132,12 +123,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingEmail, code: otpCode, type: pendingType }),
+      const { data } = await api.post("/api/auth/otp/verify", {
+        email: pendingEmail,
+        code: otpCode,
+        type: pendingType,
       });
-      const data = await res.json();
       if (!data.success) {
         toast.error(data.error || "Verification failed");
         return;
@@ -168,12 +158,10 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
     setCanResend(false);
     setCooldown(60);
     try {
-      const res = await fetch("/api/auth/otp/resend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingEmail, type: pendingType }),
+      const { data } = await api.post("/api/auth/otp/resend", {
+        email: pendingEmail,
+        type: pendingType,
       });
-      const data = await res.json();
       if (!data.success) {
         toast.error(data.error || "Failed to resend code");
         setCanResend(true);

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Edit2, Eye, Trash2, AlertCircle } from "lucide-react";
 import { getCloudinaryUrl } from "@/lib/utils";
+import { api, isOk } from "@/lib/api";
 
 type BlogStatus = "draft" | "pending" | "published" | "changes_requested" | "rejected";
 
@@ -22,8 +23,7 @@ export default function MyBlogsPage() {
   async function fetchBlogs() {
     setLoading(true);
     try {
-      const res = await fetch("/api/user/blogs");
-      const data = await res.json();
+      const { data } = await api.get("/api/user/blogs");
       if (data.success) setBlogs(data.data);
     } finally {
       setLoading(false);
@@ -34,8 +34,8 @@ export default function MyBlogsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this draft? This cannot be undone.")) return;
-    const res = await fetch(`/api/user/blogs/${id}`, { method: "DELETE" });
-    if (res.ok) fetchBlogs();
+    const { status } = await api.delete(`/api/user/blogs/${id}`);
+    if (isOk(status)) fetchBlogs();
     else alert("Failed to delete blog. Ensure it is still a draft.");
   }
 

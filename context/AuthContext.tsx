@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { api, isOk } from "@/lib/api";
 
 interface User {
   id: string;
@@ -27,27 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setUser(data.data);
-        } else {
-          setUser(null);
-        }
-      } else if (res.status === 401) {
-        const refreshRes = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
-        if (refreshRes.ok) {
-          const retry = await fetch("/api/auth/me", { credentials: "include" });
-          if (retry.ok) {
-            const data = await retry.json();
-            setUser(data.success ? data.data : null);
-          } else {
-            setUser(null);
-          }
+      const { data, status } = await api.get("/api/auth/me");
+      if (isOk(status) && data.success) {
+        setUser(data.data);
+      } else if (status === 401) {
+        const refreshRes = await api.post("/api/auth/refresh");
+        if (isOk(refreshRes.status)) {
+          const retry = await api.get("/api/auth/me");
+          setUser(retry.data.success ? retry.data.data : null);
         } else {
           setUser(null);
         }
@@ -71,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await api.post("/api/auth/logout");
       setUser(null);
       window.location.href = "/";
     } catch (err) {

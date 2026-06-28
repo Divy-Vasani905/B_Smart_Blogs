@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 function OtpVerifyContent() {
   const router = useRouter();
@@ -113,13 +114,7 @@ function OtpVerifyContent() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, type }),
-      });
-
-      const data = await res.json();
+      const { data } = await api.post("/api/auth/otp/verify", { email, code, type });
       if (!data.success) {
         setError(data.error || "Verification failed");
         setLoading(false);
@@ -154,13 +149,7 @@ function OtpVerifyContent() {
     setCooldown(60);
 
     try {
-      const res = await fetch("/api/auth/otp/resend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, type }),
-      });
-
-      const data = await res.json();
+      const { data } = await api.post("/api/auth/otp/resend", { email, type });
       if (!data.success) {
         setError(data.error || "Failed to resend code");
         setCanResend(true);

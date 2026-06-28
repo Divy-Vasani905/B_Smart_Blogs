@@ -12,6 +12,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import { useCallback, useRef } from "react";
 import { EditorToolbar } from "./Toolbar";
+import { api, isOk } from "@/lib/api";
 
 interface TiptapEditorProps {
   content?: Record<string, unknown>;
@@ -84,19 +85,14 @@ export function TiptapEditor({
         const formData = new FormData();
         formData.append("image", file);
 
-        const res = await fetch("/api/upload/image", {
-          method: "POST",
-          body: formData,
-        });
+        const { data, status } = await api.post("/api/upload/image", formData);
 
-        if (!res.ok) {
-          const err = await res.json();
-          alert(err.error || "Upload failed");
+        if (!isOk(status)) {
+          alert(data.error || "Upload failed");
           return;
         }
 
-        const { data } = await res.json();
-        editor.chain().focus().setImage({ src: data.url, alt: file.name }).run();
+        editor.chain().focus().setImage({ src: data.data.url, alt: file.name }).run();
       } catch {
         alert("Image upload failed. Please try again.");
       } finally {

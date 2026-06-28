@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -29,12 +30,7 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, intent: "admin" }),
-      });
-      const data = await res.json();
+      const { data } = await api.post("/api/auth/login", { ...form, intent: "admin" });
 
       if (!data.success) {
         setError(data.error || "Authentication failed");
@@ -63,12 +59,11 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingEmail, code: otpCode, type: "login" }),
+      const { data } = await api.post("/api/auth/otp/verify", {
+        email: pendingEmail,
+        code: otpCode,
+        type: "login",
       });
-      const data = await res.json();
 
       if (!data.success) {
         setError(data.error || "Verification failed");
@@ -76,7 +71,7 @@ export default function AdminLoginPage() {
       }
 
       if (data.data?.role !== "admin") {
-        await fetch("/api/auth/logout", { method: "POST" });
+        await api.post("/api/auth/logout");
         setError("Access denied. Admin credentials required.");
         setShowOtp(false);
         setOtpCode("");
@@ -99,12 +94,10 @@ export default function AdminLoginPage() {
     setCanResend(false);
     setCooldown(60);
     try {
-      const res = await fetch("/api/auth/otp/resend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: pendingEmail, type: "login" }),
+      const { data } = await api.post("/api/auth/otp/resend", {
+        email: pendingEmail,
+        type: "login",
       });
-      const data = await res.json();
 
       if (!data.success) {
         setError(data.error || "Failed to resend code");
