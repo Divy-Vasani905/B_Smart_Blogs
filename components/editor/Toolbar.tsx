@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 
 import type { Editor } from "@tiptap/react";
+
+interface CursorTooltip {
+  text: string;
+  x: number;
+  y: number;
+}
 
 interface ToolbarProps {
   editor: Editor;
@@ -19,6 +25,17 @@ interface ToolbarButton {
 
 export function EditorToolbar({ editor, onImageUpload, onLinkAdd }: ToolbarProps) {
   const [, setTick] = useState(0);
+  const [tooltip, setTooltip] = useState<CursorTooltip | null>(null);
+
+  const showTooltip = (text: string, e: MouseEvent<HTMLButtonElement>) => {
+    setTooltip({ text, x: e.clientX, y: e.clientY });
+  };
+
+  const moveTooltip = (text: string, e: MouseEvent<HTMLButtonElement>) => {
+    setTooltip({ text, x: e.clientX, y: e.clientY });
+  };
+
+  const hideTooltip = () => setTooltip(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -179,30 +196,44 @@ export function EditorToolbar({ editor, onImageUpload, onLinkAdd }: ToolbarProps
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-1 px-4 py-3">
-      {groups.map((group, gi) => (
-        <div key={gi} className="flex items-center gap-0.5">
-          {group.map((btn, bi) => (
-            <button
-              key={bi}
-              type="button"
-              title={btn.title}
-              onClick={btn.action}
-              onMouseDown={(e) => e.preventDefault()}
-              className={`px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                btn.isActive
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
-          {gi < groups.length - 1 && (
-            <div className="w-px h-5 bg-gray-300 mx-1" />
-          )}
+    <>
+      <div className="flex flex-wrap items-center gap-1 px-4 py-3">
+        {groups.map((group, gi) => (
+          <div key={gi} className="flex items-center gap-0.5">
+            {group.map((btn, bi) => (
+              <button
+                key={bi}
+                type="button"
+                onClick={btn.action}
+                onMouseEnter={(e) => showTooltip(btn.title, e)}
+                onMouseMove={(e) => moveTooltip(btn.title, e)}
+                onMouseLeave={hideTooltip}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  btn.isActive
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+            {gi < groups.length - 1 && (
+              <div className="w-px h-5 bg-gray-300 mx-1" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {tooltip && (
+        <div
+          role="tooltip"
+          className="fixed z-[100] pointer-events-none -translate-x-1/2 px-2.5 py-1.5 text-xs font-medium text-white bg-gray-900 rounded-md shadow-lg whitespace-nowrap"
+          style={{ left: tooltip.x, top: tooltip.y + 14 }}
+        >
+          {tooltip.text}
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
