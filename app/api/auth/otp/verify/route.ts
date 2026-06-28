@@ -5,6 +5,7 @@ import { verifySignupOtp, verifyLoginOtp } from "@/services/otp.service";
 import { signAdminSessionToken } from "@/lib/auth/jwt";
 import { setAdminSessionCookie } from "@/lib/auth/cookies";
 import { issueUserSession } from "@/lib/auth/issue-session";
+import { rateLimitOtpVerify } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { handleApiError } from "@/lib/utils";
 
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, code, type } = parsed.data;
+
+    const limited = await rateLimitOtpVerify(req, email);
+    if (limited) return limited;
 
     let result;
     if (type === "signup") {

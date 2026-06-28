@@ -11,7 +11,14 @@ import { getRedisClient } from "@/lib/redis/client";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-type LimiterKind = "login" | "signup" | "upload" | "general" | "google";
+type LimiterKind =
+  | "login"
+  | "signup"
+  | "upload"
+  | "general"
+  | "google"
+  | "otp_verify"
+  | "otp_verify_ip";
 
 type LimiterConfig = {
   keyPrefix: string;
@@ -50,6 +57,20 @@ const LIMITER_CONFIGS: Record<LimiterKind, LimiterConfig> = {
   google: {
     keyPrefix: "google_oauth",
     points: isDev ? 100 : 10,
+    duration: 15 * 60,
+    blockDuration: isDev ? 1 : 15 * 60,
+  },
+  /** OTP verify: 5 attempts per email per 15 minutes */
+  otp_verify: {
+    keyPrefix: "otp_verify",
+    points: isDev ? 100 : 5,
+    duration: 15 * 60,
+    blockDuration: isDev ? 1 : 15 * 60,
+  },
+  /** OTP verify: 20 attempts per IP per 15 minutes */
+  otp_verify_ip: {
+    keyPrefix: "otp_verify_ip",
+    points: isDev ? 100 : 20,
     duration: 15 * 60,
     blockDuration: isDev ? 1 : 15 * 60,
   },
@@ -142,4 +163,15 @@ export async function rateLimit(
 ): Promise<NextResponse | null> {
   const limitKey = key ?? getIp(req);
   return applyLimit(getLimiter(type), limitKey);
+}
+
+/** Rate-limit OTP verification by IP and by email (brute-force protection). */
+export async function rateLimitOtpVerify(
+  req: NextRequest,
+  email: string
+): Promise<NextResponse | null> {
+  const ipLimited = await rateLimit(req, "otp_verify_ip");
+  if (ipLimited) return ipLimited;
+
+  return rateLimit(req, "otp_verify", `email:${email.toLowerCase().trim()}`);
 }
