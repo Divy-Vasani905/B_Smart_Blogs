@@ -33,3 +33,15 @@ export const loginSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// ── Google OAuth Schema ────────────────────────────────────────────────────────
+
+/**
+ * Validates the payload sent from the frontend after a Google Sign-In popup.
+ * The `credential` is the raw Google ID token (JWT issued by Google).
+ */
+export const googleAuthSchema = z.object({
+  credential: z.string().min(1, "Google credential token is required"),
+});
+
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;

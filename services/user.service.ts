@@ -6,10 +6,10 @@ import type { SignupInput } from "@/lib/validations/auth.schema";
 export async function createUser(data: SignupInput): Promise<IUserDocument> {
   await connectDB();
 
-  const exists = await User.findOne({ 
-    $or: [{ email: data.email }, { username: data.username }] 
+  const exists = await User.findOne({
+    $or: [{ email: data.email }, { username: data.username }]
   }).lean();
-  
+
   if (exists) {
     if (exists.email === data.email) throw new Error("EMAIL_EXISTS");
     if (exists.username === data.username) throw new Error("USERNAME_EXISTS");

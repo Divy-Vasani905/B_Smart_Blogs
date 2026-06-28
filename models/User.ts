@@ -1,11 +1,16 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import type { UserRole } from "@/types/user.types";
 
+// ── Auth Provider ─────────────────────────────────────────────────────────────
+export type AuthProvider = "local" | "google";
+
 export interface IUserDocument extends Document {
   name: string;
   username: string;
   email: string;
-  password: string;
+  password?: string; // Optional — Google users have no password
+  provider: AuthProvider; // "local" for email/password, "google" for OAuth
+  googleId?: string; // Google's unique user sub-ID
   role: UserRole;
   avatar?: string;
   bio?: string;
@@ -45,11 +50,24 @@ const UserSchema = new Schema<IUserDocument>(
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
       index: true,
     },
+    // Password is optional — Google OAuth users are created without one
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: false,
       minlength: [8, "Password must be at least 8 characters"],
       select: false, // Never return password in queries by default
+    },
+    // Track how the user authenticated for the first time
+    provider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    // Google's unique user ID (the "sub" field from Google ID token)
+    googleId: {
+      type: String,
+      sparse: true, // Allows multiple null values in the unique index
+      index: true,
     },
     role: {
       type: String,
@@ -77,9 +95,9 @@ const UserSchema = new Schema<IUserDocument>(
   }
 );
 
-// Index for faster queries
-UserSchema.index({ email: 1 });
+// Additional compound/sparse indexes (field-level index:true handles single-field indexes above)
 UserSchema.index({ role: 1 });
+UserSchema.index({ googleId: 1 }, { sparse: true }); // Sparse: only index docs that have googleId
 
 // Prevent mongoose from creating duplicate model on hot reloads
 const User: Model<IUserDocument> =

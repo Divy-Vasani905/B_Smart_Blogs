@@ -35,6 +35,14 @@ const generalLimiter = new RateLimiterMemory({
   duration: 60,
 });
 
+/** Google OAuth: 10 attempts per 15 minutes per IP (100 in dev) */
+const googleLimiter = new RateLimiterMemory({
+  keyPrefix: "google_oauth",
+  points: isDev ? 100 : 10,
+  duration: 15 * 60,
+  blockDuration: isDev ? 1 : 15 * 60,
+});
+
 // ── Helper Functions ──────────────────────────────────────────────────────────
 
 function getIp(req: NextRequest): string {
@@ -78,7 +86,7 @@ async function applyLimit(
 
 export async function rateLimit(
   req: NextRequest,
-  type: "login" | "signup" | "upload" | "general",
+  type: "login" | "signup" | "upload" | "general" | "google",
   key?: string
 ): Promise<NextResponse | null> {
   const ip = getIp(req);
@@ -91,6 +99,8 @@ export async function rateLimit(
       return applyLimit(signupLimiter, limitKey);
     case "upload":
       return applyLimit(uploadLimiter, limitKey);
+    case "google":
+      return applyLimit(googleLimiter, limitKey);
     default:
       return applyLimit(generalLimiter, limitKey);
   }

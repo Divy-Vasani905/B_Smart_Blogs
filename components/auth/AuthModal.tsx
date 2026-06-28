@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { RefreshCw, Lock } from "lucide-react";
 import { UserRole } from "@/types/user.types";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -219,7 +220,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="login">
+              <TabsContent value="login" className="space-y-2 sm:space-y-2.5">
                 <form onSubmit={handleLogin} className="space-y-2 sm:space-y-2.5">
                   <div className="space-y-0.5">
                     <Label htmlFor="login-email" className="text-[10px] sm:text-xs font-semibold ml-1">Email</Label>
@@ -253,9 +254,19 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                     {loading ? "Verifying..." : "Sign In"}
                   </Button>
                 </form>
+
+                <div className="relative flex items-center gap-2 pt-2">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-[10px] sm:text-xs text-muted-foreground font-medium px-1 shrink-0">
+                    or
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <GoogleLoginButton onSuccess={onClose} />
               </TabsContent>
 
-              <TabsContent value="signup">
+              <TabsContent value="signup" className="space-y-2 sm:space-y-2.5">
                 <form onSubmit={handleSignup} className="space-y-1 sm:space-y-1.5">
                   <div className="space-y-0.5">
                     <Label htmlFor="name" className="text-[10px] sm:text-xs font-semibold ml-1">Full Name</Label>
@@ -311,6 +322,16 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                     {loading ? "Signing Up..." : "Join B Smart"}
                   </Button>
                 </form>
+
+                <div className="relative flex items-center gap-2 pt-2">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-[10px] sm:text-xs text-muted-foreground font-medium px-1 shrink-0">
+                    or
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <GoogleLoginButton onSuccess={onClose} />
               </TabsContent>
             </Tabs>
           ) : (

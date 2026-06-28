@@ -21,11 +21,10 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 
-# ----- Package manager locks (keep one, ignore the rest) -----
-# Uncomment the lock file you DON'T use:
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# ----- Package manager locks (not committed — regenerate locally) -----
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # ----- TypeScript Build Cache -----
 tsconfig.tsbuildinfo
@@ -41,6 +40,8 @@ Thumbs.db
 *.pem
 *.log
 *.local
+.eslintcache
+.cursor/
 
 # ----- IDE / Editor Specific -----
 .vscode/
