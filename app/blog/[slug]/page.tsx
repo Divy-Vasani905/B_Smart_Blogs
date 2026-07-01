@@ -8,8 +8,11 @@ import { SITE_URL, SITE_NAME } from "@/lib/site-config";
 import { getPublishedBlogBySlug, getRelatedBlogs } from "@/services/blog.service";
 import { buildBlogPostMetadata } from "@/lib/blog-metadata";
 import { getCloudinaryUrl } from "@/lib/utils";
-import { SafeHtml } from "@/components/SafeHtml";
 import { BlogViewTracker } from "@/components/BlogViewTracker";
+import { AdSenseScript } from "@/components/ads/AdSenseScript";
+import { AdSlot } from "@/components/ads/AdSlot";
+import { BlogArticleWithAds } from "@/components/ads/BlogArticleWithAds";
+import { getAdSlotId } from "@/lib/adsense/config";
 
 /** On-demand ISR — pages are generated on first visit, then revalidated. */
 export const revalidate = 3600;
@@ -30,6 +33,8 @@ export default async function BlogPostPage({ params }: Props) {
 
   const author = blog.author as unknown as Record<string, string>;
   const related = await getRelatedBlogs(String(blog._id), blog.category, 3);
+  const leaderboardSlot = getAdSlotId("leaderboard");
+  const bottomSlot = getAdSlotId("articleBottom");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -63,14 +68,48 @@ export default async function BlogPostPage({ params }: Props) {
     ],
   };
 
+  const titleBlock = !blog.thumbnail ? (
+    <div className="mb-8">
+      <span className="inline-block rounded-md bg-gradient-to-r from-violet-500 to-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow">
+        {blog.category}
+      </span>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">{blog.title}</h1>
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <span className="flex items-center gap-1.5"><User className="h-4 w-4" />{author?.name}</span>
+        <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{blog.readingTime} min read</span>
+        <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" />{blog.views.toLocaleString()} views</span>
+      </div>
+    </div>
+  ) : null;
+
+  const footerBlock = (
+    <>
+      {blog.tags && blog.tags.length > 0 && (
+        <div className="mt-8 flex flex-wrap gap-2">
+          {blog.tags.map((tag: string) => (
+            <span key={tag} className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-10 border-t border-border pt-6">
+        <Link href="/blogs" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Back to all posts
+        </Link>
+      </div>
+    </>
+  );
+
   return (
     <>
+      <AdSenseScript />
       <BlogViewTracker slug={blog.slug} />
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbLd} />
       <div className="w-full">
         <article>
-          {/* Breadcrumb */}
           <div className="border-b border-border bg-muted/20">
             <div className="container mx-auto px-4 py-3 sm:px-6 lg:px-8">
               <nav aria-label="Breadcrumb">
@@ -85,7 +124,6 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Hero */}
           {blog.thumbnail && (
             <div className="relative aspect-[21/9] w-full overflow-hidden bg-muted">
               <Image src={getCloudinaryUrl(blog.thumbnail, 1600)} alt={blog.title} fill className="object-cover" sizes="100vw" priority />
@@ -112,46 +150,22 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
           )}
 
-          {/* Article Body — SSR rendered Tiptap HTML */}
-          <div className="container mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-            {!blog.thumbnail && (
-              <div className="mb-8">
-                <span className="inline-block rounded-md bg-gradient-to-r from-violet-500 to-blue-600 px-2.5 py-1 text-xs font-semibold text-white shadow">{blog.category}</span>
-                <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">{blog.title}</h1>
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><User className="h-4 w-4" />{author?.name}</span>
-                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{blog.readingTime} min read</span>
-                  <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" />{blog.views.toLocaleString()} views</span>
-                </div>
-              </div>
-            )}
-
-            <SafeHtml
-              html={blog.contentHtml ?? ""}
-              className="prose prose-neutral prose-slate dark:prose-invert max-w-none text-black prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-black prose-p:text-black prose-strong:text-black prose-a:text-primary prose-img:rounded-xl prose-pre:bg-muted prose-code:text-primary prose-code:before:content-none prose-code:after:content-none"
-            />
-
-            {/* Tags */}
-            {blog.tags && blog.tags.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-2">
-                {blog.tags.map((tag: string) => (
-                  <span key={tag} className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-10 border-t border-border pt-6">
-              <Link href="/blogs" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to all posts
-              </Link>
-            </div>
+          {/* Leaderboard below hero */}
+          <div className="container mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <AdSlot slotId={leaderboardSlot} format="horizontal" fullWidthResponsive />
           </div>
+
+          <BlogArticleWithAds
+            contentHtml={blog.contentHtml ?? ""}
+            headerBlock={titleBlock}
+            footerBlock={footerBlock}
+          />
         </article>
 
-        {/* Related Posts */}
+        <div className="container mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <AdSlot slotId={bottomSlot} format="horizontal" fullWidthResponsive />
+        </div>
+
         {related.length > 0 && (
           <section className="border-t border-border bg-muted/20 py-12" aria-labelledby="related-heading">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">

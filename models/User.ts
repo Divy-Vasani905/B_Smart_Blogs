@@ -66,8 +66,6 @@ const UserSchema = new Schema<IUserDocument>(
     // Google's unique user ID (the "sub" field from Google ID token)
     googleId: {
       type: String,
-      sparse: true, // Allows multiple null values in the unique index
-      index: true,
     },
     role: {
       type: String,
