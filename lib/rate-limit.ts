@@ -94,12 +94,12 @@ const LIMITER_CONFIGS: Record<LimiterKind, LimiterConfig> = {
     duration: 15 * 60,
     blockDuration: isDev ? 1 : 15 * 60,
   },
-  /** Blog view: 1 counted view per IP + slug per 3 hours */
+  /** Blog view: 1 counted view per IP + slug per 24 hours */
   blog_view: {
     keyPrefix: "blog_view",
     points: 1,
-    duration: 3 * 60 * 60,
-    blockDuration: 3 * 60 * 60,
+    duration: 24 * 60 * 60,
+    blockDuration: 24 * 60 * 60,
   },
 };
 
@@ -206,7 +206,7 @@ export async function rateLimitOtpResend(
   return rateLimit(req, "otp_resend", `email:${email.toLowerCase().trim()}`);
 }
 
-/** Rate-limit blog view increments: 1 per IP + slug per 3 hours. */
+/** Rate-limit blog view increments: 1 per IP + slug per 24 hours. */
 export async function rateLimitBlogView(
   req: NextRequest,
   slug: string

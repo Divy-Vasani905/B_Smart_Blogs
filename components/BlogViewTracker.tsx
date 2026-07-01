@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
-/** Must match server blog_view rate-limit window (3 hours). */
-const VIEW_COOLDOWN_MS = 3 * 60 * 60 * 1000;
+/** Must match server blog_view rate-limit window (24 hours). */
+const VIEW_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 interface BlogViewTrackerProps {
   slug: string;
@@ -34,7 +34,7 @@ function markCounted(slug: string): void {
 }
 
 /**
- * Records one view per browser per slug every 3 hours.
+ * Records one view per browser per slug every 24 hours.
  * Reloads within the window do not call the API or bump MongoDB views.
  */
 export function BlogViewTracker({ slug }: BlogViewTrackerProps) {
