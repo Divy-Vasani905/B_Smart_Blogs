@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { SITE_NAME, SITE_URL } from "@/lib/site-config";
+import { logger } from "@/lib/logger";
 
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
@@ -30,7 +31,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     });
     return true;
   } catch (error) {
-    console.error("Error sending email via Nodemailer:", error);
+    logger.error("email.send_failed", { err: error, to });
     return false;
   }
 }
@@ -184,6 +185,117 @@ export function getOtpEmailTemplate({
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} ${SITE_NAME}. All rights reserved.</p>
             <p><a href="${SITE_URL}">Visit our website</a> | <a href="${SITE_URL}/privacy-policy">Privacy Policy</a></p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+interface BlogReviewEmailParams {
+  authorName: string;
+  blogTitle: string;
+  type: "approve" | "reject";
+  message?: string;
+  dashboardUrl: string;
+  blogUrl?: string;
+}
+
+export function getBlogReviewEmailTemplate({
+  authorName,
+  blogTitle,
+  type,
+  message,
+  dashboardUrl,
+  blogUrl,
+}: BlogReviewEmailParams): string {
+  const isApproved = type === "approve";
+  const title = isApproved ? "Your Blog Is Live!" : "Blog Review Update";
+  const headline = isApproved
+    ? "Congratulations — your article has been approved"
+    : "Your blog submission needs attention";
+  const bodyText = isApproved
+    ? `Great news! <strong>${blogTitle}</strong> has been reviewed and is now published on ${SITE_NAME}.`
+    : `Your blog <strong>${blogTitle}</strong> was not approved at this time.`;
+  const accentColor = isApproved ? "#10b981" : "#f43f5e";
+  const ctaLabel = isApproved ? "View your published post" : "Open your dashboard";
+  const ctaUrl = isApproved && blogUrl ? blogUrl : dashboardUrl;
+
+  const feedbackBlock =
+    !isApproved && message
+      ? `
+        <div style="background-color: rgba(51, 65, 85, 0.3); border-left: 4px solid ${accentColor}; padding: 16px; border-radius: 0 8px 8px 0; font-size: 14px; line-height: 1.6; color: #e2e8f0; margin: 24px 0;">
+          <strong>Reviewer feedback:</strong><br>${message.replace(/\n/g, "<br>")}
+        </div>
+      `
+      : "";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            overflow: hidden;
+          }
+          .header {
+            background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+            padding: 32px;
+            text-align: center;
+          }
+          .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 800; }
+          .content { padding: 40px 32px; }
+          .greeting { font-size: 16px; color: #e2e8f0; margin-top: 0; }
+          .instruction { font-size: 15px; line-height: 1.6; color: #94a3b8; }
+          .cta {
+            display: inline-block;
+            margin-top: 28px;
+            padding: 14px 24px;
+            background-color: ${accentColor};
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+          }
+          .footer {
+            padding: 24px 32px;
+            background-color: #0f172a;
+            border-top: 1px solid #334155;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${headline}</h1>
+          </div>
+          <div class="content">
+            <p class="greeting">Hello ${authorName},</p>
+            <p class="instruction">${bodyText}</p>
+            ${feedbackBlock}
+            <a class="cta" href="${ctaUrl}">${ctaLabel}</a>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${SITE_NAME}. All rights reserved.</p>
           </div>
         </div>
       </body>

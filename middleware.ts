@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken, verifyAdminSessionToken } from "@/lib/auth/jwt";
 import { tryRefreshAccessToken } from "@/lib/auth/middleware-refresh";
+import {
+  ADMIN_ROUTES,
+  USER_DASHBOARD_ROUTES,
+  ADMIN_API_ROUTES,
+  USER_API_ROUTES,
+  UPLOAD_API_ROUTES,
+} from "@/lib/middleware/routes";
 
 const ACCESS_COOKIE = process.env.COOKIE_ACCESS_NAME || "__bsf_acc";
 const ADMIN_COOKIE = process.env.COOKIE_ADMIN_SESSION || "__bsf_adm";
-
-// ── Route Matchers ─────────────────────────────────────────────────
-const ADMIN_ROUTES = /^\/backstage-b-smart-studio(?!\/login)(\/.*)?$/;
-const USER_DASHBOARD_ROUTES = /^\/dashboard(\/.*)?$/;
-const ADMIN_API_ROUTES = /^\/api\/admin\//;
-const USER_API_ROUTES = /^\/api\/user\//;
-const UPLOAD_API_ROUTES = /^\/api\/upload\//;
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -90,7 +90,7 @@ export async function middleware(req: NextRequest) {
 
     if (!accessToken && !adminToken) {
       if (USER_DASHBOARD_ROUTES.test(pathname)) {
-        return NextResponse.redirect(new URL("/", req.url));
+        return NextResponse.redirect(new URL("/login", req.url));
       }
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -122,7 +122,7 @@ export async function middleware(req: NextRequest) {
       if (refreshed) return refreshed;
 
       if (USER_DASHBOARD_ROUTES.test(pathname)) {
-        return NextResponse.redirect(new URL("/", req.url));
+        return NextResponse.redirect(new URL("/login", req.url));
       }
       return NextResponse.json(
         { success: false, error: "Invalid or expired token" },

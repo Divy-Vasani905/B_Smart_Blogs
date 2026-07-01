@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { SignJWT, jwtVerify } from "jose";
 import type { AuthUser } from "@/types/user.types";
 import { parseDurationToSeconds } from "@/lib/auth/duration";
@@ -38,22 +39,37 @@ export async function verifyAccessToken(token: string): Promise<AuthUser> {
 
 // ── Refresh Token ─────────────────────────────────────────────────────────────
 
-export async function signRefreshToken(payload: { userId: string }): Promise<string> {
-  return new SignJWT({ ...payload })
+export async function signRefreshToken(
+  payload: { userId: string }
+): Promise<{ token: string; jti: string }> {
+  const jti = randomUUID();
+  const token = await new SignJWT({ userId: payload.userId })
     .setProtectedHeader({ alg: "HS256" })
+    .setJti(jti)
     .setIssuedAt()
     .setIssuer("bsmart-finance")
     .setAudience("bsmart-refresh")
     .setExpirationTime(REFRESH_EXPIRES)
     .sign(REFRESH_SECRET);
+
+  return { token, jti };
 }
 
-export async function verifyRefreshToken(token: string): Promise<{ userId: string }> {
+export async function verifyRefreshToken(
+  token: string
+): Promise<{ userId: string; jti: string }> {
   const { payload } = await jwtVerify(token, REFRESH_SECRET, {
     issuer: "bsmart-finance",
     audience: "bsmart-refresh",
   });
-  return payload as unknown as { userId: string };
+
+  const userId = payload.userId as string | undefined;
+  const jti = payload.jti as string | undefined;
+  if (!userId || !jti) {
+    throw new Error("Invalid refresh token payload");
+  }
+
+  return { userId, jti };
 }
 
 // ── Admin Session Token (short-lived, no refresh) ─────────────────────────────

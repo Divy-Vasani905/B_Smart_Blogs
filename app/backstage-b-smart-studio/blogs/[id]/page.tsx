@@ -18,12 +18,7 @@ export default function AdminBlogReviewPage() {
   const router = useRouter();
   const params = useParams<{ id?: string }>();
   const id = params?.id;
-  // Guard against missing id
-  if (!id) {
-    // Redirect to blogs list if id is unavailable
-    router.push('/backstage-b-smart-studio/blogs');
-    return null;
-  }
+
   const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
@@ -40,7 +35,12 @@ export default function AdminBlogReviewPage() {
     status: "",
   });
 
+  useEffect(() => {
+    if (!id) router.push("/backstage-b-smart-studio/blogs");
+  }, [id, router]);
+
   const fetchBlog = useCallback(() => {
+    if (!id) return;
     setLoading(true);
     api.get(`/api/admin/blogs/${id}`)
       .then(({ data: d }) => {
@@ -89,6 +89,8 @@ export default function AdminBlogReviewPage() {
       }
     } finally { setActionLoading(""); }
   }
+
+  if (!id) return null;
 
   if (loading) return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center">

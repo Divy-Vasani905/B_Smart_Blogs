@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginSchema } from "@/lib/validations/auth.schema";
-import { getUserByEmail } from "@/services/user.service";
+import {
+  getUserByEmail,
+  clearExpiredAccountLock,
+  isUserAccountLocked,
+  recordFailedLoginAttempt,
+  resetLoginAttempts,
+} from "@/services/user.service";
 import { comparePassword } from "@/lib/auth/password";
+import { lockRemainingMinutes } from "@/lib/auth/account-lock";
 import { generateAndSendLoginOtp } from "@/services/otp.service";
 import { rateLimit } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/types/api.types";
@@ -25,22 +32,38 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = parsed.data;
 
-    // 1. Verify user exists and credentials are correct first
     const user = await getUserByEmail(email);
+
+    if (user) {
+      if (isUserAccountLocked(user)) {
+        const minutes = lockRemainingMinutes(user.lockUntil!);
+        return NextResponse.json(
+          apiError(
+            `Account temporarily locked due to too many failed attempts. Try again in ${minutes} minute(s).`
+          ),
+          { status: 423 }
+        );
+      }
+      await clearExpiredAccountLock(String(user._id), user.lockUntil);
+    }
+
     if (!user || !user.isActive) {
       return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
     }
 
     const isValid = await comparePassword(password, user.password ?? "");
     if (!isValid) {
+      await recordFailedLoginAttempt(String(user._id));
       return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
     }
 
     if (parsed.data.intent === "admin" && user.role !== "admin") {
+      await recordFailedLoginAttempt(String(user._id));
       return NextResponse.json(apiError("Invalid email or password"), { status: 401 });
     }
 
-    // 2. Generate and send login OTP
+    await resetLoginAttempts(String(user._id));
+
     const result = await generateAndSendLoginOtp(email);
     if (!result.success) {
       if (result.message === "COOLDOWN_ACTIVE") {

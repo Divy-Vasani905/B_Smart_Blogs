@@ -5,6 +5,12 @@ import type { BlogFilters, PaginatedBlogs, BlogListItem } from "@/types/blog.typ
 import { getPagination } from "@/lib/utils";
 import type { AdminUpdateBlogInput } from "@/lib/validations/blog.schema";
 import { tiptapJsonToHtml } from "@/lib/tiptap-server";
+import {
+  notifyAuthorBlogApproved,
+  notifyAuthorBlogRejected,
+} from "@/services/blog-notification.service";
+import { revalidateBlogCategories } from "@/lib/cache/blog-categories";
+import { logger } from "@/lib/logger";
 
 // ── Admin Dashboard Analytics ─────────────────────────────────────────────────
 
@@ -103,7 +109,7 @@ export async function approveBlog(
   reviewerId: string
 ): Promise<IBlogDocument | null> {
   await connectDB();
-  return Blog.findByIdAndUpdate(
+  const blog = (await Blog.findByIdAndUpdate(
     blogId,
     {
       status: "published",
@@ -118,7 +124,18 @@ export async function approveBlog(
       },
     },
     { new: true }
-  ).lean() as unknown as Promise<IBlogDocument | null>;
+  )
+    .populate("author", "name email")
+    .lean()) as unknown as IBlogDocument | null;
+
+  if (blog) {
+    revalidateBlogCategories();
+    notifyAuthorBlogApproved(blog).catch((err) =>
+      logger.error("blog.notify_approval_failed", { err, blogId: String(blog._id) })
+    );
+  }
+
+  return blog;
 }
 
 export async function rejectBlog(
@@ -127,7 +144,7 @@ export async function rejectBlog(
   message: string
 ): Promise<IBlogDocument | null> {
   await connectDB();
-  return Blog.findByIdAndUpdate(
+  const blog = (await Blog.findByIdAndUpdate(
     blogId,
     {
       status: "rejected",
@@ -141,7 +158,17 @@ export async function rejectBlog(
       },
     },
     { new: true }
-  ).lean() as unknown as Promise<IBlogDocument | null>;
+  )
+    .populate("author", "name email")
+    .lean()) as unknown as IBlogDocument | null;
+
+  if (blog) {
+    notifyAuthorBlogRejected(blog, message).catch((err) =>
+      logger.error("blog.notify_rejection_failed", { err, blogId: String(blog._id) })
+    );
+  }
+
+  return blog;
 }
 
 export async function requestBlogChanges(
@@ -175,6 +202,7 @@ export async function adminUpdateBlog(
 ): Promise<IBlogDocument | null> {
   await connectDB();
 
+  const existing = await Blog.findById(blogId).select("status category").lean();
   const { content, ...fields } = data;
   const updateData: Record<string, unknown> = { ...fields };
 
@@ -183,12 +211,28 @@ export async function adminUpdateBlog(
     updateData.contentHtml = tiptapJsonToHtml(content as Record<string, unknown>);
   }
 
-  return Blog.findByIdAndUpdate(blogId, updateData, { new: true }).lean() as unknown as Promise<IBlogDocument | null>;
+  const blog = (await Blog.findByIdAndUpdate(blogId, updateData, { new: true }).lean()) as unknown as IBlogDocument | null;
+
+  const affectsCategories =
+    existing?.status === "published" ||
+    blog?.status === "published" ||
+    data.status === "published" ||
+    data.category !== undefined;
+
+  if (blog && affectsCategories) {
+    revalidateBlogCategories();
+  }
+
+  return blog;
 }
 
 export async function adminDeleteBlog(blogId: string): Promise<boolean> {
   await connectDB();
+  const existing = await Blog.findById(blogId).select("status").lean();
   const result = await Blog.deleteOne({ _id: blogId });
+  if (result.deletedCount > 0 && existing?.status === "published") {
+    revalidateBlogCategories();
+  }
   return result.deletedCount > 0;
 }
 

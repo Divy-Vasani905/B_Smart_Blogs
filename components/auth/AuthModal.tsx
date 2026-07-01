@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { RefreshCw, Lock } from "lucide-react";
 import { UserRole } from "@/types/user.types";
-import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { LazyGoogleSignIn } from "@/components/auth/LazyGoogleSignIn";
 import { api } from "@/lib/api";
 
 interface AuthModalProps {
@@ -251,7 +251,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                <GoogleLoginButton onSuccess={onClose} />
+                {isOpen && <LazyGoogleSignIn onSuccess={onClose} />}
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-2 sm:space-y-2.5">
@@ -319,7 +319,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }: AuthModalPr
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                <GoogleLoginButton onSuccess={onClose} />
+                {isOpen && <LazyGoogleSignIn onSuccess={onClose} />}
               </TabsContent>
             </Tabs>
           ) : (

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/types/api.types";
 import { ZodError } from "zod";
+import { logger } from "@/lib/logger";
 
 // ── Generic Utilities ─────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ export function formatZodError(err: ZodError): string {
  * Handle API errors consistently.
  */
 export function handleApiError(err: unknown): NextResponse {
-  console.error("[API Error]", err);
+  logger.error("api.unhandled_error", { err });
 
   if (err instanceof ZodError) {
     return NextResponse.json(apiError(formatZodError(err)), { status: 400 });

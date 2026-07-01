@@ -5,6 +5,8 @@ import { slugify, escapeRegex, getPagination } from "@/lib/utils";
 import type { BlogFilters, PaginatedBlogs, BlogListItem } from "@/types/blog.types";
 import type { CreateBlogInput, UpdateBlogInput } from "@/lib/validations/blog.schema";
 import { tiptapJsonToHtml } from "@/lib/tiptap-server";
+import { cache } from "react";
+import { getCachedCategories } from "@/lib/cache/blog-categories";
 
 // Reference User model to prevent tree-shaking and ensure its schema is registered for populate queries
 const _preventTreeShaking = User;
@@ -53,6 +55,9 @@ export async function getBlogBySlug(slug: string): Promise<IBlogDocument | null>
     .populate("author", "name avatar bio")
     .lean() as unknown as Promise<IBlogDocument | null>;
 }
+
+/** Deduplicates slug fetch within a single request (metadata + page). */
+export const getPublishedBlogBySlug = cache((slug: string) => getBlogBySlug(slug));
 
 export async function getFeaturedBlogs(count = 4): Promise<IBlogDocument[]> {
   await connectDB();
@@ -121,8 +126,7 @@ export async function incrementViews(blogId: string): Promise<void> {
 }
 
 export async function getCategories(): Promise<string[]> {
-  await connectDB();
-  return Blog.distinct("category", { status: "published" });
+  return getCachedCategories();
 }
 
 // ── User Blog Service ─────────────────────────────────────────────────────────

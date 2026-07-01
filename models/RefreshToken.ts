@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
 
 export interface IRefreshTokenDocument extends Document {
+  jti: string;
   tokenHash: string; // bcrypt hash of the token for secure storage
   user: Types.ObjectId;
   expiresAt: Date;
@@ -12,10 +13,15 @@ export interface IRefreshTokenDocument extends Document {
 
 const RefreshTokenSchema = new Schema<IRefreshTokenDocument>(
   {
+    jti: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     tokenHash: {
       type: String,
       required: true,
-      index: true,
     },
     user: {
       type: Schema.Types.ObjectId,

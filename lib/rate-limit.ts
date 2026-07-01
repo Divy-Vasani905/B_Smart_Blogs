@@ -7,6 +7,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { assertRedisConfiguredInProduction, getRedisClient } from "@/lib/redis/client";
 import { getClientIp } from "@/lib/request-ip";
+import { logger } from "@/lib/logger";
 
 assertRedisConfiguredInProduction();
 
@@ -124,10 +125,9 @@ function createLimiter(config: LimiterConfig): RateLimiter {
 
   if (process.env.NODE_ENV === "production" && !warnedMissingRedis) {
     warnedMissingRedis = true;
-    console.warn(
-      "[rate-limit] REDIS_URL is not set — using in-memory limiters. " +
-        "Limits will not be shared across server instances."
-    );
+    logger.warn("rate_limit.redis_missing", {
+      detail: "Using in-memory limiters; limits will not be shared across instances.",
+    });
   }
 
   return memoryLimiter;
@@ -211,6 +211,16 @@ export async function rateLimitBlogView(
   req: NextRequest,
   slug: string
 ): Promise<NextResponse | null> {
+  const generalLimited = await rateLimitPublicWrite(req);
+  if (generalLimited) return generalLimited;
+
   const ip = getClientIp(req);
   return rateLimit(req, "blog_view", `${slug.toLowerCase().trim()}:${ip}`);
+}
+
+/** Broad IP cap for unauthenticated POST/write endpoints (views, contact forms, etc.). */
+export async function rateLimitPublicWrite(
+  req: NextRequest
+): Promise<NextResponse | null> {
+  return rateLimit(req, "general");
 }

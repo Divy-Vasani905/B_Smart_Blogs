@@ -11,11 +11,12 @@ function refreshExpiresAt(): Date {
 }
 
 /**
- * Persist a hashed refresh token for later validation and revocation.
+ * Persist a hashed refresh token keyed by JWT jti for O(1) validation.
  */
 export async function storeRefreshToken(
   userId: string,
   rawToken: string,
+  jti: string,
   meta: { userAgent?: string; ip?: string } = {}
 ): Promise<void> {
   await connectDB();
@@ -23,6 +24,7 @@ export async function storeRefreshToken(
   const tokenHash = await bcrypt.hash(rawToken, SALT_ROUNDS);
 
   await RefreshToken.create({
+    jti,
     tokenHash,
     user: userId,
     expiresAt: refreshExpiresAt(),
@@ -37,7 +39,7 @@ export async function storeRefreshToken(
 export async function validateStoredRefreshToken(
   rawToken: string
 ): Promise<{ userId: string; tokenId: string } | null> {
-  let payload: { userId: string };
+  let payload: { userId: string; jti: string };
   try {
     payload = await verifyRefreshToken(rawToken);
   } catch {
@@ -46,19 +48,19 @@ export async function validateStoredRefreshToken(
 
   await connectDB();
 
-  const candidates = await RefreshToken.find({
+  const doc = await RefreshToken.findOne({
+    jti: payload.jti,
     user: payload.userId,
     isRevoked: false,
     expiresAt: { $gt: new Date() },
   }).select("_id tokenHash");
 
-  for (const doc of candidates) {
-    if (await bcrypt.compare(rawToken, doc.tokenHash)) {
-      return { userId: payload.userId, tokenId: String(doc._id) };
-    }
-  }
+  if (!doc) return null;
 
-  return null;
+  const matches = await bcrypt.compare(rawToken, doc.tokenHash);
+  if (!matches) return null;
+
+  return { userId: payload.userId, tokenId: String(doc._id) };
 }
 
 /**

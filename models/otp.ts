@@ -29,6 +29,11 @@ const OTPSchema = new Schema<IOTPDocument>(
     name: { type: String },
     username: { type: String },
     passwordHash: { type: String },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      expires: 300, // 5 minutes
+    },
   },
   {
     timestamps: true,

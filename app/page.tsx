@@ -242,10 +242,10 @@ export default async function HomePage() {
             id="cta-heading"
             className="text-2xl font-bold text-white sm:text-3xl"
           >
-            Ready to level up your skills?
+            Ready to grow your wealth?
           </h2>
           <p className="mt-3 text-white/80">
-            Explore all our articles on web development, design, and more.
+            Explore expert guides on investing, markets, budgeting, and building long-term wealth.
           </p>
           <Link
             href="/blogs"

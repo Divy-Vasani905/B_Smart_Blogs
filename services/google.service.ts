@@ -11,6 +11,7 @@
 import { OAuth2Client } from "google-auth-library";
 import { connectDB } from "@/lib/db/mongoose";
 import User, { IUserDocument } from "@/models/User";
+import { logger } from "@/lib/logger";
 
 // Initialize the Google OAuth client with our server-side Client ID
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -166,7 +167,7 @@ export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<Go
     return { success: true, user: newUser };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error during Google auth";
-    console.error("[GoogleService] findOrCreateGoogleUser error:", message);
+    logger.error("google.find_or_create_failed", { err: message });
     return { success: false, error: message };
   }
 }

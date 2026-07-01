@@ -4,59 +4,28 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { Clock, Eye, ArrowLeft, Calendar, User } from "lucide-react";
-import { SITE_URL, SITE_NAME, SITE_KEYWORDS } from "@/lib/site-config";
-import { getBlogBySlug, getRelatedBlogs, getAllPublishedSlugs } from "@/services/blog.service";
+import { SITE_URL, SITE_NAME } from "@/lib/site-config";
+import { getPublishedBlogBySlug, getRelatedBlogs } from "@/services/blog.service";
+import { buildBlogPostMetadata } from "@/lib/blog-metadata";
 import { getCloudinaryUrl } from "@/lib/utils";
 import { SafeHtml } from "@/components/SafeHtml";
 import { BlogViewTracker } from "@/components/BlogViewTracker";
 
-export const revalidate = 3600; // ISR: re-generate every 1 hour
+/** On-demand ISR — pages are generated on first visit, then revalidated. */
+export const revalidate = 3600;
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateStaticParams() {
-  const slugs = await getAllPublishedSlugs();
-  return slugs.map((s) => ({ slug: s.slug }));
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const blog = await getBlogBySlug(slug);
+  const blog = await getPublishedBlogBySlug(slug);
   if (!blog) return { title: "Post Not Found" };
-
-  const url = `${SITE_URL}/blog/${blog.slug}`;
-  const author = blog.author as unknown as Record<string, string>;
-  const seo = blog.seo as Record<string, string> | undefined;
-
-  return {
-    title: seo?.metaTitle || blog.title,
-    description: seo?.metaDescription || blog.excerpt,
-    keywords: [...SITE_KEYWORDS, blog.category, ...(blog.tags ?? [])],
-    alternates: { canonical: seo?.canonicalUrl || `/blog/${blog.slug}` },
-    openGraph: {
-      title: blog.title,
-      description: blog.excerpt,
-      url,
-      type: "article",
-      publishedTime: blog.publishedAt ? String(blog.publishedAt) : String(blog.createdAt),
-      modifiedTime: String(blog.updatedAt),
-      authors: [author?.name ?? "B Smart Finance"],
-      section: blog.category,
-      tags: [blog.category, ...(blog.tags ?? [])],
-      images: [{ url: blog.thumbnail || `${SITE_URL}/og-finance.png`, width: 1200, height: 630, alt: blog.title }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: blog.title,
-      description: blog.excerpt,
-      images: [blog.thumbnail || `${SITE_URL}/og-finance.png`],
-    },
-  };
+  return buildBlogPostMetadata(blog);
 }
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const blog = await getBlogBySlug(slug);
+  const blog = await getPublishedBlogBySlug(slug);
   if (!blog) notFound();
 
   const author = blog.author as unknown as Record<string, string>;

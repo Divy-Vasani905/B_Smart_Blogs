@@ -27,8 +27,8 @@ export async function issueUserSession(
   };
 
   const accessToken = await signAccessToken(tokenPayload);
-  const refreshToken = await signRefreshToken({ userId: user.userId });
+  const { token: refreshToken, jti } = await signRefreshToken({ userId: user.userId });
 
-  await storeRefreshToken(user.userId, refreshToken, getRequestMeta(req));
+  await storeRefreshToken(user.userId, refreshToken, jti, getRequestMeta(req));
   setUserAuthCookies(res, accessToken, refreshToken);
 }

@@ -44,8 +44,8 @@ export async function performTokenRefresh(
   };
 
   const accessToken = await signAccessToken(user);
-  const refreshToken = await signRefreshToken({ userId: user.userId });
-  await storeRefreshToken(user.userId, refreshToken, getRequestMeta(req));
+  const { token: refreshToken, jti } = await signRefreshToken({ userId: user.userId });
+  await storeRefreshToken(user.userId, refreshToken, jti, getRequestMeta(req));
 
   return { accessToken, refreshToken, user };
 }

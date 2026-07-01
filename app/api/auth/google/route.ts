@@ -18,6 +18,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { apiSuccess, apiError } from "@/types/api.types";
 import { handleApiError } from "@/lib/utils";
 import { googleAuthSchema } from "@/lib/validations/auth.schema";
+import { logger } from "@/lib/logger";
 import type { UserRole } from "@/types/user.types";
 
 export async function POST(req: NextRequest) {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     try {
       googleProfile = await verifyGoogleToken(credential);
     } catch (err) {
-      console.error("[API/auth/google] Token verification failed:", err);
+      logger.error("auth.google.token_verification_failed", { err });
       return NextResponse.json(
         apiError("Invalid Google token. Please sign in again."),
         { status: 401 }

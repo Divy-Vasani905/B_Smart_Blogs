@@ -54,7 +54,6 @@ export const metadata: Metadata = {
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalTrigger } from "@/components/auth/AuthModalTrigger";
 import { Toaster } from "@/components/ui/sonner";
-import { GoogleAuthProvider } from "@/components/auth/GoogleAuthProvider";
 
 export default function RootLayout({
   children,
@@ -64,15 +63,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
-        <GoogleAuthProvider>
-          <AuthProvider>
-            <Header />
-            <main className="flex-1 w-full">{children}</main>
-            <Footer />
-            <AuthModalTrigger />
-            <Toaster position="top-center" toastOptions={{ style: { zIndex: 9999 } }} />
-          </AuthProvider>
-        </GoogleAuthProvider>
+        <AuthProvider>
+          <Header />
+          <main className="flex-1 w-full">{children}</main>
+          <Footer />
+          <AuthModalTrigger />
+          <Toaster position="top-center" toastOptions={{ style: { zIndex: 9999 } }} />
+        </AuthProvider>
       </body>
     </html>
   );
