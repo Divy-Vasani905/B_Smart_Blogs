@@ -78,6 +78,7 @@ export function Header() {
 
   return (
     <header
+      id="site-header"
       ref={headerRef}
       className="sticky top-0 z-50 w-full border-b border-border bg-background transition-transform duration-300 ease-out"
       style={{ willChange: 'transform' }}

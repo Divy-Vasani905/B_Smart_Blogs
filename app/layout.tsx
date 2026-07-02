@@ -53,6 +53,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalTrigger } from "@/components/auth/AuthModalTrigger";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
@@ -65,6 +66,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <AuthProvider>
           <Header />
+          <NavigationProgress />
           <main className="flex-1 w-full">{children}</main>
           <Footer />
           <AuthModalTrigger />
